@@ -1,0 +1,207 @@
+#include <Wire.h>
+#include <Adafruit_MPR121.h>
+
+// =================== HARDWARE SETTINGS =================== //
+// Change these pins as per your ESP32 setup
+#define SDA_PIN 21
+#define SCL_PIN 22
+
+// LEDs and Button Pins
+const int exploreLedPin = 5;   // Exploration Mode LED
+const int testLedPin = 6;      // Test Mode LED
+const int buttonPin = 25;       // Mode toggle button
+
+// =================== OBJECT INITIALIZATION =================== //
+Adafruit_MPR121 cap1 = Adafruit_MPR121(); // 0x5A
+
+// =================== VARIABLES =================== //
+bool testMode = false;
+bool lastButtonState = HIGH;
+unsigned long lastDebounceTime = 0;
+unsigned long debounceDelay = 50;
+
+int currentQuestion = 0;
+int score = 0;
+
+// Define states
+String stateNames[] = {
+  "Jammu & Kashmir","Ladakh","Maharashtra","Odisha","Uttrakhand","Tamil Nadu","Uttar Pradesh","Rajasthan","Gujarat","Madhya Pradesh","Bihar","Karnataka" //cap1
+};
+
+String stateFacts[] = {
+  "Jammu & Kashmir\nCapital: Srinagar\nKnown for Dal Lake",
+  "Ladakh\nCapital: Leh\nFamous for Pangong Lake",
+  "Maharashtra\nCapital: Mumbai\nGateway of India is here\nAlso known for Bollywood",
+  "Odisha\nCapital: Bhubaneswar\nFamous for Jagannath Temple in Puri\nAlso famous for Sun temple at Konark",
+  "Uttrakhand\nCapital: Dehradun\nGateway to the Himalayas\nFamous of Valley of Flowers National Park",
+  "Tamil Nadu\nCapital: Chennai\nKnown for Marina Beach\nFamous for Pongal festival",
+  "Uttar Pradesh\nCapital: Lucknow\nHome to Taj Mahal",
+  "Rajasthan\nCapital: Jaipur\nKnown as the Pink City\nLargest state by area",
+  "Gujarat\nCapital: Gandhinagar\nGir National Park houses Asiatic Lions\nAlso known for Rann of Kutch",
+  "Madhya Pradesh\nCapital: Bhopal\nHome to Khajuraho Temples\nFamous for Sanchi Stupa",
+  "Bihar\nCapital: Patna\nHome to Nalanda University\nFamous food: Litti Chokha",
+  "Karnataka\nCapital: Bengaluru\nKnown as India's Silicon Valley"
+};
+
+// Quiz questions and answers
+String quizQuestions[] = {
+  "Which state is famous for Taj Mahal?",
+  "Which state is famous for its pink city, Jaipur?",
+  "Which state is famous for Rann of Kutch?",
+  "Which state is famous for Litti Chokha?",
+  "Which state is famous for the Jagannath Temple in Puri?",
+  "Which is the largest state in India by area?",
+  "Which state is home to Gir National Park, famous for Asiatic lions?",
+  "Which state is known for the Sun Temple at Konark?",
+  "Which state is famous for the Valley of Flowers National Park?",
+  "Which state has the famous Sanchi Stupa?",
+  "Which state celebrates the famous Pongal festival?",
+  "Bengaluru, also known as silicon valley of India, is in which state?",
+  "Which state is famous for the Gateway of India?"
+};
+
+int correctAnswers[] = {6,7,8,10,3,7,8,3,4,9,5,11,2,};  // Corresponding indices to stateNames
+
+// =================== SETUP =================== //
+void setup() {
+  Serial.begin(115200);
+
+  // Initialize I2C on ESP32 with custom SDA and SCL pins
+  Wire.begin(SDA_PIN, SCL_PIN, 400000);  // 400kHz I2C frequency
+
+  Serial.println("India Map Ready!");
+
+  // Initialize LEDs and button
+  pinMode(exploreLedPin, OUTPUT);
+  pinMode(testLedPin, OUTPUT);
+  pinMode(buttonPin, INPUT_PULLUP);
+
+  // Initialize MPR121 sensors
+  if (!cap1.begin(0x5A)) Serial.println("MPR121 #1 not found");
+
+  delay(1000);
+  displayMode();
+}
+
+// =================== LOOP =================== //
+void loop() {
+  checkButton();
+
+  if (testMode) {
+    testModeFunction();
+  } else {
+    explorationMode();
+  }
+
+  delay(50);  // Small delay to stabilize I2C communication
+}
+
+// =================== BUTTON CHECK =================== //
+void checkButton() {
+  bool buttonState = digitalRead(buttonPin);
+
+  if (buttonState != lastButtonState) {
+    lastDebounceTime = millis();
+  }
+
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (buttonState == LOW && lastButtonState == HIGH) {
+      testMode = !testMode;
+      currentQuestion = 0;
+      score = 0;
+
+      displayMode();
+      delay(300);
+    }
+  }
+
+  lastButtonState = buttonState;
+}
+
+// =================== DISPLAY CURRENT MODE =================== //
+void displayMode() {
+  Serial.println();
+  
+  if (testMode) {
+    digitalWrite(testLedPin, HIGH);
+    digitalWrite(exploreLedPin, LOW);
+
+    Serial.println("Mode: TEST");
+    Serial.print("Q: ");
+    Serial.println(currentQuestion + 1);
+    Serial.println(quizQuestions[currentQuestion]);
+  } else {
+    digitalWrite(exploreLedPin, HIGH);
+    digitalWrite(testLedPin, LOW);
+
+    Serial.println("Mode: EXPLORE");
+    Serial.println("Touch a State!");
+  }
+}
+
+// =================== EXPLORATION MODE =================== //
+void explorationMode() {
+  int touchedIndex = getTouchedElectrode();
+
+  if (touchedIndex != -1) {
+    Serial.println();
+    Serial.print("State: ");
+    Serial.println(stateNames[touchedIndex]);
+
+    delay(500); // Optional: delay for readability
+
+    Serial.print("Fact: ");
+    Serial.println(stateFacts[touchedIndex]);
+
+    delay(2000);
+    displayMode();
+  }
+}
+
+
+// =================== TEST MODE FUNCTION =================== //
+void testModeFunction() {
+  int touchedIndex = getTouchedElectrode();
+
+  if (touchedIndex != -1) {
+    Serial.println();
+
+    if (touchedIndex == correctAnswers[currentQuestion]) {
+      Serial.println("Correct!");
+      score++;
+    } else {
+      Serial.println("Wrong!");
+    }
+
+    Serial.print("Score: ");
+    Serial.println(score);
+
+    delay(1500);
+
+    currentQuestion++;
+    if (currentQuestion >= (sizeof(quizQuestions) / sizeof(quizQuestions[0]))) {
+      Serial.println();
+      Serial.println("Quiz Over!");
+      Serial.print("Final Score: ");
+      Serial.println(score);
+
+      delay(3000);
+      currentQuestion = 0;
+      score = 0;
+    }
+
+    displayMode();
+  }
+}
+
+
+// =================== TOUCH DETECTION =================== //
+int getTouchedElectrode() {
+  uint16_t touched = cap1.touched();
+
+  for (uint8_t i = 0; i < 12; i++) {
+    if (touched & (1 << i)) return i;
+  }
+
+  return -1;
+}
