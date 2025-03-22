@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ESP32 Serial Monitor</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; text-align: center; }
+    #output { width: 80%; height: 300px; margin: 20px auto; background: #333; color: #0f0; padding: 10px; overflow-y: auto; border-radius: 10px; }
+    button { padding: 10px 20px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h1>ESP32 Serial Monitor on Chrome</h1>
+  <button onclick="connectSerial()">Connect to ESP32</button>
+  <div id="output"></div>
+
+  <script>
+    let port;
+    let reader;
+    let output = document.getElementById('output');
+
+    async function connectSerial() {
+      try {
+        // Request port
+        port = await navigator.serial.requestPort();
+        await port.open({ baudRate: 115200 });
+
+        // Read data
+        reader = port.readable.getReader();
+        output.innerHTML += "<p>Connected to ESP32!</p>";
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) {
+            reader.releaseLock();
+            break;
+          }
+          const text = new TextDecoder().decode(value);
+          output.innerHTML += text + "<br>";
+          output.scrollTop = output.scrollHeight;
+        }
+
+      } catch (error) {
+        console.error('Error:', error);
+        output.innerHTML += `<p style="color:red;">${error}</p>`;
+      }
+    }
+  </script>
+</body>
+</html>
