@@ -7,9 +7,9 @@
 #define SCL_PIN 22
 
 // LEDs and Button Pins
-const int exploreLedPin = 5;   // Exploration Mode LED
-const int testLedPin = 6;      // Test Mode LED
-const int buttonPin = 25;       // Mode toggle button
+const int exploreLedPin = 4;   // Exploration Mode LED
+const int testLedPin = 5;      // Test Mode LED
+const int buttonPin = 2;       // Mode toggle button
 
 // =================== OBJECT INITIALIZATION =================== //
 Adafruit_MPR121 cap1 = Adafruit_MPR121(); // 0x5A
@@ -29,18 +29,18 @@ String stateNames[] = {
 };
 
 String stateFacts[] = {
-  "Jammu & Kashmir\nCapital: Srinagar\nKnown for Dal Lake",
-  "Ladakh\nCapital: Leh\nFamous for Pangong Lake",
-  "Maharashtra\nCapital: Mumbai\nGateway of India is here\nAlso known for Bollywood",
-  "Odisha\nCapital: Bhubaneswar\nFamous for Jagannath Temple in Puri\nAlso famous for Sun temple at Konark",
-  "Uttrakhand\nCapital: Dehradun\nGateway to the Himalayas\nFamous of Valley of Flowers National Park",
-  "Tamil Nadu\nCapital: Chennai\nKnown for Marina Beach\nFamous for Pongal festival",
-  "Uttar Pradesh\nCapital: Lucknow\nHome to Taj Mahal",
-  "Rajasthan\nCapital: Jaipur\nKnown as the Pink City\nLargest state by area",
-  "Gujarat\nCapital: Gandhinagar\nGir National Park houses Asiatic Lions\nAlso known for Rann of Kutch",
-  "Madhya Pradesh\nCapital: Bhopal\nHome to Khajuraho Temples\nFamous for Sanchi Stupa",
-  "Bihar\nCapital: Patna\nHome to Nalanda University\nFamous food: Litti Chokha",
-  "Karnataka\nCapital: Bengaluru\nKnown as India's Silicon Valley"
+  "Jammu & Kashmir\n Capital: Srinagar\n Known for Dal Lake",
+  "Ladakh\n Capital: Leh\n Famous for Pangong Lake",
+  "Maharashtra\n Capital: Mumbai\n Gateway of India is here\n Also known for Bollywood",
+  "Odisha\n Capital: Bhubaneswar\n Famous for Jagannath Temple in Puri\n Also famous for Sun temple at Konark",
+  "Uttrakhand\n Capital: Dehradun\n Gateway to the Himalayas\n Famous of Valley of Flowers National Park",
+  "Tamil Nadu\n Capital: Chennai\n Known for Marina Beach\n Famous for Pongal festival",
+  "Uttar Pradesh\n Capital: Lucknow\n Home to Taj Mahal",
+  "Rajasthan\n Capital: Jaipur\n Known as the Pink City\n Largest state by area",
+  "Gujarat\n Capital: Gandhinagar\n Gir National Park houses Asiatic Lions\n Also known for Rann of Kutch",
+  "Madhya Pradesh\n Capital: Bhopal\n Home to Khajuraho Temples\n Famous for Sanchi Stupa",
+  "Bihar\n Capital: Patna\n Home to Nalanda University\n Famous food: Litti Chokha",
+  "Karnataka\n Capital: Bengaluru\n Known as India's Silicon Valley"
 };
 
 // Quiz questions and answers
