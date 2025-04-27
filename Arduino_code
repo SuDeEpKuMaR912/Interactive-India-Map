@@ -2,162 +2,95 @@
 #include <Adafruit_MPR121.h>
 
 // =================== HARDWARE SETTINGS =================== //
-// Change these pins as per your ESP32 setup
 #define SDA_PIN 21
 #define SCL_PIN 22
 
-// LEDs and Button Pins
-const int exploreLedPin = 4;   // Exploration Mode LED
-const int testLedPin = 5;      // Test Mode LED
-const int buttonPin = 2;       // Mode toggle button
+// LEDs
+const int exploreLedPin = 4;   
+const int testLedPin = 5;      
 
 // =================== OBJECT INITIALIZATION =================== //
 Adafruit_MPR121 cap1 = Adafruit_MPR121(); // 0x5A
 
 // =================== VARIABLES =================== //
-bool testMode = false;
-bool lastButtonState = HIGH;
-unsigned long lastDebounceTime = 0;
-unsigned long debounceDelay = 50;
-
 int currentQuestion = 0;
 int score = 0;
 
-// Define states
 String stateNames[] = {
-  "Jammu & Kashmir","Ladakh","Maharashtra","Odisha","Uttrakhand","Tamil Nadu","Uttar Pradesh","Rajasthan","Gujarat","Madhya Pradesh","Bihar","Karnataka" //cap1
+  "Jammu & Kashmir","Ladakh","Maharashtra","Odisha","Uttrakhand","Tamil Nadu",
+  "Uttar Pradesh","Rajasthan","Gujarat","Madhya Pradesh","Bihar","Karnataka"
 };
 
-String stateFacts[] = {
-  "Jammu & Kashmir\n Capital: Srinagar\n Known for Dal Lake",
-  "Ladakh\n Capital: Leh\n Famous for Pangong Lake",
-  "Maharashtra\n Capital: Mumbai\n Gateway of India is here\n Also known for Bollywood",
-  "Odisha\n Capital: Bhubaneswar\n Famous for Jagannath Temple in Puri\n Also famous for Sun temple at Konark",
-  "Uttrakhand\n Capital: Dehradun\n Gateway to the Himalayas\n Famous of Valley of Flowers National Park",
-  "Tamil Nadu\n Capital: Chennai\n Known for Marina Beach\n Famous for Pongal festival",
-  "Uttar Pradesh\n Capital: Lucknow\n Home to Taj Mahal",
-  "Rajasthan\n Capital: Jaipur\n Known as the Pink City\n Largest state by area",
-  "Gujarat\n Capital: Gandhinagar\n Gir National Park houses Asiatic Lions\n Also known for Rann of Kutch",
-  "Madhya Pradesh\n Capital: Bhopal\n Home to Khajuraho Temples\n Famous for Sanchi Stupa",
-  "Bihar\n Capital: Patna\n Home to Nalanda University\n Famous food: Litti Chokha",
-  "Karnataka\n Capital: Bengaluru\n Known as India's Silicon Valley"
-};
-
-// Quiz questions and answers
 String quizQuestions[] = {
   "Which state is famous for Taj Mahal?",
   "Which state is famous for its pink city, Jaipur?",
   "Which state is famous for Rann of Kutch?",
   "Which state is famous for Litti Chokha?",
+  "Which state is famous for Dal Lake?",
+  "Amber Fort, a major tourist attraction, is in which state?",
+  "Statue of Unity, the worlds tallest statue, is located in which state?",
+  "Ajanta and Ellora caves are located in which state?",
   "Which state is famous for the Jagannath Temple in Puri?",
+  "In which state is the Pangong Lake located?",
+  "In which state is the dance form Bharatanatyam most popular?",
   "Which is the largest state in India by area?",
+  "Which state's capital is Dehradun?",
+  "Which state has the famous Mughal Gardens?",
+  "Hampi, a UNESCO World Heritage Site, is located in which state?",
   "Which state is home to Gir National Park, famous for Asiatic lions?",
+  "Kedarnath Temple is located in which Indian state?",
+  "Lingaraj Temple, a masterpiece of Kalinga architecture, is located in which state?",
+  "Marina Beach, one of the longest beaches, is located in which state?",
+  "Mahabalipuram temples are located in which state?",
   "Which state is known for the Sun Temple at Konark?",
   "Which state is famous for the Valley of Flowers National Park?",
+  "Nalanda University, one of the oldest universities, is in which state?",
   "Which state has the famous Sanchi Stupa?",
   "Which state celebrates the famous Pongal festival?",
+  "Kashi Vishwanath Temple is located in which state?",
   "Bengaluru, also known as silicon valley of India, is in which state?",
-  "Which state is famous for the Gateway of India?"
+  "Which state is famous for the Gateway of India?",
+  "Sabarmati Ashram, associated with Mahatma Gandhi, is located in which state?",
+  "Which state's traditional dress includes a pheran?"
 };
 
-int correctAnswers[] = {6,7,8,10,3,7,8,3,4,9,5,11,2,};  // Corresponding indices to stateNames
+int correctAnswers[] = {6,7,8,10,0,7,8,2,3,1,5,7,4,0,11,8,4,3,5,5,3,4,10,9,5,6,11,2,8,0};  
 
 // =================== SETUP =================== //
 void setup() {
   Serial.begin(115200);
 
-  // Initialize I2C on ESP32 with custom SDA and SCL pins
   Wire.begin(SDA_PIN, SCL_PIN, 400000);  // 400kHz I2C frequency
 
   Serial.println("India Map Ready!");
 
-  // Initialize LEDs and button
   pinMode(exploreLedPin, OUTPUT);
   pinMode(testLedPin, OUTPUT);
-  pinMode(buttonPin, INPUT_PULLUP);
 
-  // Initialize MPR121 sensors
   if (!cap1.begin(0x5A)) Serial.println("MPR121 #1 not found");
 
   delay(1000);
+
   displayMode();
 }
 
 // =================== LOOP =================== //
 void loop() {
-  checkButton();
-
-  if (testMode) {
-    testModeFunction();
-  } else {
-    explorationMode();
-  }
-
-  delay(50);  // Small delay to stabilize I2C communication
+  testModeFunction(); // Always stay in Test Mode
+  delay(50);
 }
 
-// =================== BUTTON CHECK =================== //
-void checkButton() {
-  bool buttonState = digitalRead(buttonPin);
-
-  if (buttonState != lastButtonState) {
-    lastDebounceTime = millis();
-  }
-
-  if ((millis() - lastDebounceTime) > debounceDelay) {
-    if (buttonState == LOW && lastButtonState == HIGH) {
-      testMode = !testMode;
-      currentQuestion = 0;
-      score = 0;
-
-      displayMode();
-      delay(300);
-    }
-  }
-
-  lastButtonState = buttonState;
-}
-
-// =================== DISPLAY CURRENT MODE =================== //
+// =================== DISPLAY MODE =================== //
 void displayMode() {
+  digitalWrite(testLedPin, HIGH);
+  digitalWrite(exploreLedPin, LOW);
+
   Serial.println();
-  
-  if (testMode) {
-    digitalWrite(testLedPin, HIGH);
-    digitalWrite(exploreLedPin, LOW);
-
-    Serial.println("Mode: TEST");
-    Serial.print("Q: ");
-    Serial.println(currentQuestion + 1);
-    Serial.println(quizQuestions[currentQuestion]);
-  } else {
-    digitalWrite(exploreLedPin, HIGH);
-    digitalWrite(testLedPin, LOW);
-
-    Serial.println("Mode: EXPLORE");
-    Serial.println("Touch a State!");
-  }
+  Serial.println("Mode: TEST");
+  Serial.print("Q: ");
+  Serial.println(currentQuestion + 1);
+  Serial.println(quizQuestions[currentQuestion]);
 }
-
-// =================== EXPLORATION MODE =================== //
-void explorationMode() {
-  int touchedIndex = getTouchedElectrode();
-
-  if (touchedIndex != -1) {
-    Serial.println();
-    Serial.print("State: ");
-    Serial.println(stateNames[touchedIndex]);
-
-    delay(500); // Optional: delay for readability
-
-    Serial.print("Fact: ");
-    Serial.println(stateFacts[touchedIndex]);
-
-    delay(2000);
-    displayMode();
-  }
-}
-
 
 // =================== TEST MODE FUNCTION =================== //
 void testModeFunction() {
@@ -194,7 +127,6 @@ void testModeFunction() {
   }
 }
 
-
 // =================== TOUCH DETECTION =================== //
 int getTouchedElectrode() {
   uint16_t touched = cap1.touched();
@@ -205,3 +137,7 @@ int getTouchedElectrode() {
 
   return -1;
 }
+
+ 
+
+   
